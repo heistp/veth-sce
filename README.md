@@ -4,6 +4,8 @@ These scripts run an iperf3 test with basic SCE analysis using network namespace
 
 ### Prerequisites:
 - SCE capable Cake or htb+fq_codel_fast
+- Linux kernel with IFB, VETH, HTB, NETEM and INGRESS support, as well as TC and
+  a number of packet classifiers
 - tc-adv
 - iperf3
 - tcpdump
