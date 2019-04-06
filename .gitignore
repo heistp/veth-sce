@@ -1,0 +1,21 @@
+# pcap files
+*.pcap
+
+# xplot files
+*.xpl
+
+# Private directory
+private
+
+# VIM
+*.swp
+.tags
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
