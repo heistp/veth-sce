@@ -2,7 +2,8 @@
 
 # iperf3 client params
 IPERF3_PORT=5201
-IPERF3_PARAMS="-p $IPERF3_PORT -t 10s"
+#IPERF3_PARAMS="-p $IPERF3_PORT -C dctcp-sce -t 30s"
+IPERF3_PARAMS="-p $IPERF3_PORT -t 30s"
 
 # left endpoint
 LEFT_NETEM="delay 40ms limit 1000000"

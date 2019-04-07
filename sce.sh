@@ -35,11 +35,12 @@ analyze() {
 		}
 	
 		echo "ECT(0) $dir: $(count "ip[1]&0x03 == 0x2")"
-		echo "SCE (ECT(1)) $dir: $(count "ip[1]&0x03 == 0x1")"
+		echo "ECT(1) (SCE) $dir: $(count "ip[1]&0x03 == 0x1")"
 		echo "CE $dir: $(count "ip[1]&0x03 == 0x03")"
 		echo "ECE $dir: $(count "tcp[13]&64 != 0")"
 		echo "CWR $dir: $(count "tcp[13]&128 != 0")"
-		echo "ESCE (NS) $dir: $(count "tcp[12]&1 != 0")"
+		echo "NS (ESCE) $dir: $(count "tcp[12]&1 != 0")"
+		echo "ACK $dir: $(count "tcp[13]&16 != 0")"
 		echo "PSH $dir: $(count "tcp[13]&8 != 0")"
 		echo "Total $dir: $(count "")"
 	}
