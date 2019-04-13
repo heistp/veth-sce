@@ -25,7 +25,7 @@ ns() {
         local iface="$1"
         if [ "$NS_DISABLE_OFFLOADS" = "1" ]; then
             nx ethtool -K $iface \
-                rx off tx off sg off tso off ufo off gso off gro off rxvlan off txvlan off
+                rx off tx off sg off tso off gso off gro off rxvlan off txvlan off
         fi
     }
 

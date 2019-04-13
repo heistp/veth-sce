@@ -15,35 +15,42 @@
 . "$(dirname "$0")"/config.sh
 
 analyze() {
+	local dir="${1:-\".\"}"
+
 	analyze_dir() {
-		local dir="$1"
+		local direction="$1"
 
 		count() {
 			local filter="$1"
 			local pf
 			sense() {
-				[ "$dir" = "right" ] && echo "dst"
-				[ "$dir" = "left" ] && echo "src"
+				[ "$direction" = "right" ] && echo "dst"
+				[ "$direction" = "left" ] && echo "src"
 			}
 			filter() {
 				[ "$filter" != "" ] && echo "and $filter"
 			}
-			wc -l < <(tcpdump -q -n -r $dir.pcap $(sense) port $IPERF3_PORT $(filter) 2>/dev/null)
+			wc -l < <(tcpdump -q -n -r $dir/$direction.pcap $(sense) port 5201 $(filter) 2>/dev/null)
 			if (( $? != 0 )); then
 				echo "* tcpdump return code: $?"
 			fi
 		}
 	
-		echo "ECT(0) $dir: $(count "ip[1]&0x03 == 0x2")"
-		echo "ECT(1) (SCE) $dir: $(count "ip[1]&0x03 == 0x1")"
-		echo "CE $dir: $(count "ip[1]&0x03 == 0x03")"
-		echo "ECE $dir: $(count "tcp[13]&64 != 0")"
-		echo "CWR $dir: $(count "tcp[13]&128 != 0")"
-		echo "NS (ESCE) $dir: $(count "tcp[12]&1 != 0")"
-		echo "ACK $dir: $(count "tcp[13]&16 != 0")"
-		echo "PSH $dir: $(count "tcp[13]&8 != 0")"
-		echo "Total $dir: $(count "")"
+		echo "ECT(0) $direction: $(count "ip[1]&0x03 == 0x2")"
+		echo "ECT(1) (SCE) $direction: $(count "ip[1]&0x03 == 0x1")"
+		echo "CE $direction: $(count "ip[1]&0x03 == 0x03")"
+		echo "ECE $direction: $(count "tcp[13]&64 != 0")"
+		echo "CWR $direction: $(count "tcp[13]&128 != 0")"
+		echo "NS (ESCE) $direction: $(count "tcp[12]&1 != 0")"
+		echo "ACK $direction: $(count "tcp[13]&16 != 0")"
+		echo "PSH $direction: $(count "tcp[13]&8 != 0")"
+		echo "Total $direction: $(count "")"
 	}
+
+	echo "mid.r cake stats:"
+	nsx mid tc -s -d qdisc show dev mid.r
+	echo "mid.l cake stats:"
+	nsx mid tc -s -d qdisc show dev mid.l
 
 	echo "Packet counts:"
 	echo "--------------"
@@ -121,8 +128,9 @@ restart() {
 }
 
 run() {
-	right_pcap="${1:-"right.pcap"}"
+	iperf3_params="${1:-$IPERF3_PARAMS}"
 	left_pcap="${2:-"left.pcap"}"
+	right_pcap="${3:-"right.pcap"}"
 	clean=0
 
 	cleanup() {
@@ -138,13 +146,13 @@ run() {
 
     trap cleanup EXIT
     
-	nsx rep tcpdump -i rep.l -s $SNAPLEN -w "${right_pcap}" port 5201 &>/dev/null &
 	nsx lep tcpdump -i lep.r -s $SNAPLEN -w "${left_pcap}" port 5201 &>/dev/null &
+	nsx rep tcpdump -i rep.l -s $SNAPLEN -w "${right_pcap}" port 5201 &>/dev/null &
 	sleep 1
 
 	nsx rep iperf3 -s &>/dev/null &
 	sleep 1
-	nsx lep iperf3 -c $RIGHT_IP $IPERF3_PARAMS 2>&1
+	nsx lep iperf3 -c $RIGHT_IP $iperf3_params 2>&1
 
 	echo
 	echo "Right queue stats:"

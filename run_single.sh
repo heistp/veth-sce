@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo ./sce.sh restart run analyze
+./sce.sh restart run analyze
