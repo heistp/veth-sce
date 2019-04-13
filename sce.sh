@@ -55,23 +55,28 @@ analyze() {
 
 # Sets up namespaces, netem and ecn.
 start() {
+	left_netem="${1:-$LEFT_NETEM}"
+	left_leaf="${2:-$LEFT_LEAF}"
+	right_netem="${3:-$RIGHT_NETEM}"
+	right_leaf="${4:-$RIGHT_LEAF}"
+
 	# set up endpoints and middlebox
 	ns right rep "right endpoint" $RIGHT_IP/24 mid
 	ns bridge mid "middle box" lep
 	ns left lep "left endpoint" $LEFT_IP/24
 
 	# set up left interface
-	if [[ $LEFT_LEAF == cake* ]]; then
-		nsx mid tc qdisc add dev mid.l root $LEFT_LEAF
+	if [[ $left_leaf == cake* ]]; then
+		nsx mid tc qdisc add dev mid.l root $left_leaf
 	else
 		nsx mid tc qdisc add dev mid.l root handle 1: htb default 1
 		nsx mid tc class add dev mid.l parent 1: classid 1:1 htb $LEFT_HTB
-		nsx mid tc qdisc add dev mid.l parent 1:1 $LEFT_LEAF
+		nsx mid tc qdisc add dev mid.l parent 1:1 $left_leaf
 	fi
-	if [ "$LEFT_NETEM" != "" ]; then
+	if [ "$left_netem" != "" ]; then
 		modprobe ifb
 		nsx mid ip link add dev imid.l type ifb
-		nsx mid tc qdisc add dev imid.l root handle 1: netem $LEFT_NETEM
+		nsx mid tc qdisc add dev imid.l root handle 1: netem $left_netem
 
 		nsx mid tc qdisc add dev mid.l handle ffff: ingress
 		nsx mid ip link set imid.l up
@@ -82,17 +87,17 @@ start() {
 	nsx lep sysctl -w net.ipv4.tcp_sce=$LEFT_SCE
 
 	# set up right interface
-	if [[ $RIGHT_LEAF == cake* ]]; then
-		nsx mid tc qdisc add dev mid.r root $RIGHT_LEAF
+	if [[ $right_leaf == cake* ]]; then
+		nsx mid tc qdisc add dev mid.r root $right_leaf
 	else
 		nsx mid tc qdisc add dev mid.r root handle 1: htb default 1
 		nsx mid tc class add dev mid.r parent 1: classid 1:1 htb $RIGHT_HTB
-		nsx mid tc qdisc add dev mid.r parent 1:1 $RIGHT_LEAF
+		nsx mid tc qdisc add dev mid.r parent 1:1 $right_leaf
 	fi
-	if [ "$RIGHT_NETEM" != "" ]; then
+	if [ "$right_netem" != "" ]; then
 		modprobe ifb
 		nsx mid ip link add dev imid.r type ifb
-		nsx mid tc qdisc add dev imid.r root handle 1: netem $RIGHT_NETEM
+		nsx mid tc qdisc add dev imid.r root handle 1: netem $right_netem
 
 		nsx mid tc qdisc add dev mid.r handle ffff: ingress
 		nsx mid ip link set imid.r up
@@ -112,10 +117,12 @@ stop() {
 
 restart() {
     stop
-    start $*
+    start "$@"
 }
 
 run() {
+	right_pcap="${1:-"right.pcap"}"
+	left_pcap="${2:-"left.pcap"}"
 	clean=0
 
 	cleanup() {
@@ -131,8 +138,8 @@ run() {
 
     trap cleanup EXIT
     
-	nsx rep tcpdump -i rep.l -s $SNAPLEN -w right.pcap port 5201 &>/dev/null &
-	nsx lep tcpdump -i lep.r -s $SNAPLEN -w left.pcap port 5201 &>/dev/null &
+	nsx rep tcpdump -i rep.l -s $SNAPLEN -w "${right_pcap}" port 5201 &>/dev/null &
+	nsx lep tcpdump -i lep.r -s $SNAPLEN -w "${left_pcap}" port 5201 &>/dev/null &
 	sleep 1
 
 	nsx rep iperf3 -s &>/dev/null &
